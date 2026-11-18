@@ -10,40 +10,71 @@
         {
           "id": "feed",
           "name": "โพสต์ทั่วไป / อัลบั้ม",
+          "symbol": "photo.on.rectangle.angled",
           "maxLongEdge": 2048,
           "format": "jpeg",
           "maxFileSizeKB": 1200,
-          "quality": { "min": 0.85, "max": 0.93 },
-          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+          "quality": {
+            "min": 0.85,
+            "max": 0.93
+          },
+          "sharpen": {
+            "radius": 0.8,
+            "intensity": 0.35
+          }
         },
         {
           "id": "graphic",
           "name": "ภาพกราฟิก / มีตัวหนังสือ (PNG)",
+          "symbol": "textformat.size",
           "detail": "PNG ไม่มีการบีบอัดแบบสูญเสีย ตัวหนังสือจึงคมกว่า",
           "maxLongEdge": 2048,
           "format": "png",
           "maxFileSizeKB": 15000,
-          "sharpen": { "radius": 0.6, "intensity": 0.25 }
+          "sharpen": {
+            "radius": 0.6,
+            "intensity": 0.25
+          }
         },
         {
           "id": "story",
           "name": "Story (9:16)",
+          "symbol": "rectangle.portrait.fill",
           "maxLongEdge": 1920,
-          "canvas": { "width": 1080, "height": 1920 },
+          "canvas": {
+            "width": 1080,
+            "height": 1920
+          },
           "format": "jpeg",
           "maxFileSizeKB": 1000,
-          "quality": { "min": 0.85, "max": 0.93 },
-          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+          "quality": {
+            "min": 0.85,
+            "max": 0.93
+          },
+          "sharpen": {
+            "radius": 0.8,
+            "intensity": 0.35
+          }
         },
         {
           "id": "cover",
           "name": "ภาพปกโปรไฟล์",
+          "symbol": "photo.artframe",
           "maxLongEdge": 1640,
-          "canvas": { "width": 1640, "height": 624 },
+          "canvas": {
+            "width": 1640,
+            "height": 624
+          },
           "format": "jpeg",
           "maxFileSizeKB": 800,
-          "quality": { "min": 0.85, "max": 0.93 },
-          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+          "quality": {
+            "min": 0.85,
+            "max": 0.93
+          },
+          "sharpen": {
+            "radius": 0.8,
+            "intensity": 0.35
+          }
         }
       ]
     },
@@ -55,23 +86,37 @@
         {
           "id": "chat-hd",
           "name": "ส่งในแชต (HD / คุณภาพสูง)",
+          "symbol": "sparkles",
           "maxLongEdge": 4096,
           "maxPixels": 4194304,
           "format": "jpeg",
           "maxFileSizeKB": 1500,
-          "quality": { "min": 0.86, "max": 0.94 },
-          "sharpen": { "radius": 0.8, "intensity": 0.35 },
+          "quality": {
+            "min": 0.86,
+            "max": 0.94
+          },
+          "sharpen": {
+            "radius": 0.8,
+            "intensity": 0.35
+          },
           "source": "https://help.line.me/line/smartphone/?contentId=20000248"
         },
         {
           "id": "chat",
           "name": "ส่งในแชต (คุณภาพปกติ)",
+          "symbol": "bubble.left.and.bubble.right.fill",
           "maxLongEdge": 4096,
           "maxPixels": 1638400,
           "format": "jpeg",
           "maxFileSizeKB": 700,
-          "quality": { "min": 0.86, "max": 0.94 },
-          "sharpen": { "radius": 0.7, "intensity": 0.3 },
+          "quality": {
+            "min": 0.86,
+            "max": 0.94
+          },
+          "sharpen": {
+            "radius": 0.7,
+            "intensity": 0.3
+          },
           "source": "https://help.line.me/line/smartphone/?contentId=20000248"
         }
       ]

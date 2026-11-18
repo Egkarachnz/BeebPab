@@ -6,14 +6,16 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("ความเป็นส่วนตัว") {
+            Section {
                 Toggle("เก็บข้อมูลกล้อง (EXIF) ไว้ในไฟล์", isOn: $keepCameraInfo)
                 Text("ตำแหน่ง GPS จะถูกลบออกเสมอ")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } header: {
+                Label("ความเป็นส่วนตัว", systemImage: "hand.raised.fill").foregroundStyle(Theme.blue)
             }
 
-            Section("ข้อมูลขนาดภาพของแพลตฟอร์ม") {
+            Section {
                 LabeledContent("ฉบับวันที่", value: presets.catalog.updatedAt)
                 LabeledContent("แหล่งข้อมูล", value: presets.origin.label)
                 LabeledContent("ตรวจสอบล่าสุด") {
@@ -33,12 +35,14 @@ struct SettingsView: View {
                     Button("ตรวจสอบตอนนี้") { Task { await presets.refresh() } }
                         .disabled(presets.isRefreshing)
                 }
+            } header: {
+                Label("ข้อมูลขนาดภาพของแพลตฟอร์ม", systemImage: "arrow.triangle.2.circlepath").foregroundStyle(Theme.blue)
             }
 
             ForEach(presets.catalog.platforms) { platform in
-                Section(platform.name) {
+                Section {
                     ForEach(platform.targets) { target in
-                        LabeledContent(target.name) {
+                        LabeledContent {
                             HStack(spacing: 6) {
                                 Text(target.summary).foregroundStyle(.secondary)
                                 if let source = target.source, let url = URL(string: source) {
@@ -46,8 +50,14 @@ struct SettingsView: View {
                                         .help("ที่มาของข้อมูล")
                                 }
                             }
+                        } label: {
+                            Label(target.name, systemImage: Theme.symbol(for: target))
+                                .foregroundStyle(Theme.platformColor(platform.id))
                         }
                     }
+                } header: {
+                    Label(platform.name, systemImage: Theme.platformSymbol(platform.id))
+                        .foregroundStyle(Theme.platformColor(platform.id))
                 }
             }
         }

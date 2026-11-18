@@ -37,6 +37,8 @@ struct OutputTarget: Codable, Equatable, Identifiable, Sendable {
 
     var id: String
     var name: String
+    /// SF Symbol name shown on the target's card.
+    var symbol: String?
     var detail: String?
     /// Longest edge of the output, in pixels.
     var maxLongEdge: Int

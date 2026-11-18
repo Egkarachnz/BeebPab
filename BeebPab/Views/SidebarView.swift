@@ -6,91 +6,140 @@ struct SidebarView: View {
     @Environment(\.openSettings) private var openSettings
     @AppStorage("keepCameraInfo") private var keepCameraInfo = false
 
+    private var selectedCount: Int { presets.catalog.orderedKeys(in: model.selectedTargets).count }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 10) {
-                        StepHeader(number: 2, title: "เลือกเป้าหมาย")
+                        StepHeader(number: 2, title: "เลือกเป้าหมาย", symbol: "scope", isComplete: selectedCount > 0)
                         PlatformPicker()
                     }
                     VStack(alignment: .leading, spacing: 10) {
-                        StepHeader(number: 3, title: "เลือกโฟลเดอร์บันทึก")
-                        outputFolderRow
+                        StepHeader(number: 3, title: "เลือกโฟลเดอร์บันทึก", symbol: "folder",
+                                   isComplete: model.outputFolder != nil)
+                        OutputFolderCard()
                     }
                 }
                 .padding(16)
             }
 
-            Divider()
-
             VStack(alignment: .leading, spacing: 10) {
                 if model.isProcessing {
-                    ProgressView(value: Double(model.completedTasks), total: Double(max(model.totalTasks, 1))) {
-                        Text("กำลังย่อภาพ \(model.completedTasks)/\(model.totalTasks)")
-                            .font(.caption)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Label("กำลังย่อภาพ…", systemImage: "gearshape.2.fill")
+                                .symbolEffect(.pulse)
+                            Spacer()
+                            Text("\(model.completedTasks)/\(model.totalTasks)").monospacedDigit()
+                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.blue)
+                        ProgressView(value: Double(model.completedTasks), total: Double(max(model.totalTasks, 1)))
+                            .tint(Theme.blue)
                     }
                 } else if let summary = model.lastRunSummary {
-                    HStack {
-                        Text(summary).font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.title3)
+                            .foregroundStyle(Theme.green)
+                        Text(summary)
+                            .font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
                         Spacer()
-                        Button("เปิดใน Finder") { model.revealOutputFolder() }
-                            .controlSize(.small)
+                        Button { model.revealOutputFolder() } label: {
+                            Label("เปิดใน Finder", systemImage: "folder.fill")
+                        }
+                        .controlSize(.small)
                     }
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.green.opacity(0.12)))
                 }
 
                 Button {
                     model.process(catalog: presets.catalog, options: ProcessOptions(keepCameraInfo: keepCameraInfo))
                 } label: {
-                    Text(buttonTitle)
-                        .frame(maxWidth: .infinity)
+                    Label(buttonTitle, systemImage: "wand.and.stars")
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(!model.canProcess(with: presets.catalog))
 
-                Button {
-                    openSettings()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: presets.lastError == nil ? "arrow.triangle.2.circlepath" : "exclamationmark.triangle")
-                        Text("ข้อมูลขนาดภาพ: \(presets.catalog.updatedAt) · \(presets.origin.label)")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let hint, !model.isProcessing {
+                    Label(hint, systemImage: "arrow.turn.left.up")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
-                .help(presets.lastError ?? "ระบบตรวจหาขนาดภาพล่าสุดของ Facebook และ LINE ให้อัตโนมัติ")
+
+                PresetStatusPill { openSettings() }
+                    .frame(maxWidth: .infinity)
             }
             .padding(16)
+            .background(.bar)
+            .overlay(alignment: .top) { Divider() }
         }
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var buttonTitle: String {
-        let targets = presets.catalog.orderedKeys(in: model.selectedTargets).count
-        guard !model.jobs.isEmpty, targets > 0 else { return "ย่อภาพ" }
-        return targets == 1 ? "ย่อภาพ \(model.jobs.count) ภาพ" : "ย่อภาพ \(model.jobs.count) ภาพ × \(targets) แบบ"
+        guard !model.jobs.isEmpty, selectedCount > 0 else { return "ย่อภาพ" }
+        return selectedCount == 1 ? "ย่อภาพ \(model.jobs.count) ภาพ" : "ย่อภาพ \(model.jobs.count) ภาพ × \(selectedCount) แบบ"
     }
 
-    private var outputFolderRow: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "folder.fill").foregroundStyle(.secondary)
-            if let folder = model.outputFolder {
-                Text(folder.lastPathComponent)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(folder.path)
-            } else {
-                Text("ยังไม่ได้เลือก").foregroundStyle(.secondary)
+    /// Tells the user which step is still missing.
+    private var hint: String? {
+        if model.jobs.isEmpty { return "เพิ่มภาพก่อน (ขั้นที่ 1)" }
+        if selectedCount == 0 { return "เลือกเป้าหมายอย่างน้อย 1 แบบ (ขั้นที่ 2)" }
+        if model.outputFolder == nil { return "เลือกโฟลเดอร์บันทึก (ขั้นที่ 3)" }
+        return nil
+    }
+}
+
+private struct OutputFolderCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Button { model.chooseOutputFolder() } label: {
+            HStack(spacing: 10) {
+                IconTile(symbol: model.outputFolder == nil ? "folder.badge.plus" : "folder.fill",
+                         color: model.outputFolder == nil ? .secondary : Theme.blue, size: 36,
+                         filled: model.outputFolder != nil)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let folder = model.outputFolder {
+                        Text(folder.lastPathComponent)
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                        Text(folder.deletingLastPathComponent().path(percentEncoded: false))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    } else {
+                        Text("คลิกเพื่อเลือกโฟลเดอร์")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("ภาพที่ย่อแล้วจะถูกบันทึกที่นี่")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
             }
-            Spacer()
-            Button(model.outputFolder == nil ? "เลือก…" : "เปลี่ยน…") { model.chooseOutputFolder() }
-                .disabled(model.isProcessing)
+            .padding(10)
+            .contentShape(Rectangle())
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
+        .buttonStyle(.plain)
+        .card(cornerRadius: 10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(model.outputFolder == nil ? Theme.blue.opacity(0.45) : .clear,
+                              style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+        )
+        .help(model.outputFolder?.path ?? "เลือกโฟลเดอร์สำหรับบันทึกภาพ")
+        .disabled(model.isProcessing)
     }
 }
 
@@ -99,55 +148,109 @@ struct PlatformPicker: View {
     @Environment(PresetStore.self) private var presets
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             ForEach(presets.catalog.platforms) { platform in
+                let color = Theme.platformColor(platform.id)
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
-                        Text(String(platform.name.prefix(1)))
-                            .font(.caption.bold())
-                            .foregroundStyle(.white)
-                            .frame(width: 22, height: 22)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(brandColor(platform.id)))
-                        Text(platform.name).font(.subheadline.weight(.semibold))
+                        IconTile(symbol: Theme.platformSymbol(platform.id), color: color, size: 24)
+                        Text(platform.name).font(.system(size: 14, weight: .bold))
+                        Spacer()
+                        let count = platform.targets.filter {
+                            model.selectedTargets.contains(TargetKey(platformID: platform.id, targetID: $0.id))
+                        }.count
+                        if count > 0 { Chip(text: "เลือก \(count)", color: color) }
                     }
 
                     ForEach(platform.targets) { target in
-                        let key = TargetKey(platformID: platform.id, targetID: target.id)
-                        Toggle(isOn: Binding(
-                            get: { model.selectedTargets.contains(key) },
-                            set: { _ in model.toggle(key) }
-                        )) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(target.name)
-                                Text(target.summary)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .toggleStyle(.checkbox)
-                        .help(target.detail ?? target.summary)
-                        .disabled(model.isProcessing)
+                        TargetCard(platformID: platform.id, target: target, color: color)
                     }
 
                     if let note = platform.note {
-                        Text(note)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: "lightbulb.fill").foregroundStyle(Theme.orange)
+                            Text(note).fixedSize(horizontal: false, vertical: true)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.orange.opacity(0.09)))
                     }
                 }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
             }
         }
     }
+}
 
-    private func brandColor(_ id: String) -> Color {
-        switch id {
-        case "facebook": return Color(red: 0.094, green: 0.467, blue: 0.949)
-        case "line": return Color(red: 0.024, green: 0.780, blue: 0.333)
-        default: return .accentColor
+private struct TargetCard: View {
+    @Environment(AppModel.self) private var model
+    let platformID: String
+    let target: OutputTarget
+    let color: Color
+    @State private var isHovering = false
+
+    var body: some View {
+        let key = TargetKey(platformID: platformID, targetID: target.id)
+        let selected = model.selectedTargets.contains(key)
+        Button {
+            withAnimation(.easeOut(duration: 0.12)) { model.toggle(key) }
+        } label: {
+            HStack(spacing: 10) {
+                IconTile(symbol: Theme.symbol(for: target), color: color, size: 32, filled: selected)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(target.name)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text(target.summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(selected ? color : Color.secondary.opacity(0.5))
+            }
+            .padding(8)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(selected ? color.opacity(0.10) : Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(selected ? color : Color.secondary.opacity(isHovering ? 0.35 : 0.15),
+                                  lineWidth: selected ? 1.5 : 1)
+            )
         }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help(target.detail ?? target.summary)
+        .disabled(model.isProcessing)
+    }
+}
+
+private struct PresetStatusPill: View {
+    @Environment(PresetStore.self) private var presets
+    var action: () -> Void
+
+    var body: some View {
+        let ok = presets.lastError == nil
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(ok ? Theme.green : Theme.orange)
+                    .frame(width: 7, height: 7)
+                Text("ข้อมูลขนาดภาพ \(presets.catalog.updatedAt) · \(presets.origin.label)")
+                if presets.isRefreshing { ProgressView().controlSize(.mini) }
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.secondary.opacity(0.1)))
+        }
+        .buttonStyle(.plain)
+        .help(presets.lastError ?? "ระบบตรวจขนาดภาพล่าสุดของ Facebook และ LINE ให้อัตโนมัติ · คลิกเพื่อดูรายละเอียด")
     }
 }

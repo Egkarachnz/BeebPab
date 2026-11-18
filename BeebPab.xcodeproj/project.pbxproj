@@ -14,10 +14,12 @@
 		7D7B7DF8F10D648C64BB2922 /* presets.json in Resources */ = {isa = PBXBuildFile; fileRef = 1453FF1B350B71DE7B5A593C /* presets.json */; };
 		845DB3D06934F76F06F7022E /* BeebPabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B3828D3A658123153BB695 /* BeebPabApp.swift */; };
 		846A364372269FB05F2E99D6 /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2993CE182F390AF93A14D8B1 /* PresetStore.swift */; };
+		86CE0A2910F47EAB56AC98E8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE44140604BFD109EEF15BA /* Theme.swift */; };
 		A27BB9BEFF0F18E9F6B753DB /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E8F631EB2193D7C28BD1CD /* ImageProcessor.swift */; };
 		D64579B271DAD5B4227DF8D2 /* ImageGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5589E10FD4A789FF9C95441 /* ImageGridView.swift */; };
 		DACB1914C9C9AF23A03040B0 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D0416F779821C71D45E57E /* AppModel.swift */; };
 		F6E9846B57775101ACAE5277 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBD502D0A8669F776D3D433 /* AppConfig.swift */; };
+		F9C2ADBC99F736C112FCFD07 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FE05D5142CB51087AC32DBC3 /* Assets.xcassets */; };
 		FDF205884AA0D8A2A7CD267A /* FileHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78CE7032C719C26FCF4C0679 /* FileHelpers.swift */; };
 		FDF3A326815179AA875E2A61 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC07883449E22552BA5827E /* SidebarView.swift */; };
 /* End PBXBuildFile section */
@@ -40,6 +42,7 @@
 		21F6BA134E7B2C42EF2FBE64 /* PlatformPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformPreset.swift; sourceTree = "<group>"; };
 		28D39209FB9C8F21BF1CA67E /* BeebPabTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeebPabTests.swift; sourceTree = "<group>"; };
 		2993CE182F390AF93A14D8B1 /* PresetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetStore.swift; sourceTree = "<group>"; };
+		4FE44140604BFD109EEF15BA /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		50E8F631EB2193D7C28BD1CD /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
 		78CE7032C719C26FCF4C0679 /* FileHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHelpers.swift; sourceTree = "<group>"; };
 		8CC07883449E22552BA5827E /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
@@ -49,6 +52,7 @@
 		BF5A686CEB42B96181B2E909 /* BeebPabTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BeebPabTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5589E10FD4A789FF9C95441 /* ImageGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGridView.swift; sourceTree = "<group>"; };
 		FB211AC1304E44DC2A755021 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FE05D5142CB51087AC32DBC3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -59,6 +63,7 @@
 				F5589E10FD4A789FF9C95441 /* ImageGridView.swift */,
 				FB211AC1304E44DC2A755021 /* SettingsView.swift */,
 				8CC07883449E22552BA5827E /* SidebarView.swift */,
+				4FE44140604BFD109EEF15BA /* Theme.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -76,6 +81,7 @@
 		4409163D021EB3172A7A6C20 /* BeebPab */ = {
 			isa = PBXGroup;
 			children = (
+				FE05D5142CB51087AC32DBC3 /* Assets.xcassets */,
 				9F87DBC54D77E4D00B55EBA3 /* BeebPab.entitlements */,
 				859E434D025C3A437CE987A9 /* App */,
 				575601153A46EB03B6921EB4 /* Models */,
@@ -216,6 +222,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F9C2ADBC99F736C112FCFD07 /* Assets.xcassets in Resources */,
 				7D7B7DF8F10D648C64BB2922 /* presets.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -246,6 +253,7 @@
 				846A364372269FB05F2E99D6 /* PresetStore.swift in Sources */,
 				68D120108F60353E2AD4FD67 /* SettingsView.swift in Sources */,
 				FDF3A326815179AA875E2A61 /* SidebarView.swift in Sources */,
+				86CE0A2910F47EAB56AC98E8 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -340,6 +348,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BeebPab/BeebPab.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -364,6 +373,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BeebPab/BeebPab.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;

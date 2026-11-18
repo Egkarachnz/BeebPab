@@ -59,7 +59,7 @@ final class PresetStore {
         let cacheURL = cacheDirectory.appendingPathComponent("presets.json")
         if let data = try? Data(contentsOf: cacheURL),
            let cached = try? PresetCatalog.decodeValidated(from: data),
-           cached.updatedAt >= bundled.updatedAt {
+           cached.updatedAt > bundled.updatedAt {
             catalog = cached
             origin = .cache
         } else {
