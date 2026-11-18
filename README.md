@@ -19,3 +19,9 @@ open BeebPab.xcodeproj
 - แอปโหลดไฟล์ฉบับล่าสุดจาก GitHub ทุก 24 ชม. ตั้งที่อยู่ไฟล์ใน `BeebPab/App/AppConfig.swift`
 - `.github/workflows/check-specs.yml` ตรวจหน้าข้อมูลทางการ (ช่อง `source`) ทุกวันจันทร์ ถ้าตัวเลขเปลี่ยน
   จะเปิด Issue แจ้ง แก้ `presets.json` แล้วเปลี่ยน `updatedAt` แอปทุกเครื่องจะได้ค่าใหม่เอง
+
+## ติดตั้งลง Applications
+```bash
+./scripts/install.sh
+```
+สคริปต์นี้ build แบบ Release แล้วคัดลอกไปไว้ที่ `/Applications/BeebPab.app` รันซ้ำเมื่อแก้โค้ดเพื่ออัปเดต
