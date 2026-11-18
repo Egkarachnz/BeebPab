@@ -1,0 +1,52 @@
+name: Check platform image specs
+
+on:
+  schedule:
+    - cron: "0 2 * * 1" # every Monday 09:00 Thailand time
+  workflow_dispatch:
+  push:
+    paths:
+      - presets/presets.json
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate presets.json
+        run: |
+          python3 - <<'PY'
+          import json
+          d = json.load(open("presets/presets.json"))
+          assert d["schemaVersion"] == 1, "schemaVersion must be 1"
+          for p in d["platforms"]:
+              for t in p["targets"]:
+                  assert 256 <= t["maxLongEdge"] <= 8192, (p["id"], t["id"], "maxLongEdge")
+                  assert 50 <= t["maxFileSizeKB"] <= 50000, (p["id"], t["id"], "maxFileSizeKB")
+          print("presets.json OK")
+          PY
+
+      - name: Compare official pages with last fingerprint
+        run: python3 .github/scripts/check_specs.py
+
+      - name: Open an issue if sizes changed
+        if: hashFiles('spec-report.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "ขนาดภาพของแพลตฟอร์มอาจเปลี่ยน ($(date +%Y-%m-%d))" \
+            --body-file spec-report.md
+
+      - name: Save new fingerprints
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add presets/spec-fingerprints.json
+          git diff --cached --quiet || git commit -m "Update spec fingerprints"
+          git push

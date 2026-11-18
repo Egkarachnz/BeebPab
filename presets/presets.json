@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-18",
+  "platforms": [
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "note": "Facebook เก็บภาพขอบยาวสูงสุด 2048 px ภาพที่ใหญ่กว่านี้จะถูกย่อและบีบอัดซ้ำ",
+      "targets": [
+        {
+          "id": "feed",
+          "name": "โพสต์ทั่วไป / อัลบั้ม",
+          "maxLongEdge": 2048,
+          "format": "jpeg",
+          "maxFileSizeKB": 1200,
+          "quality": { "min": 0.85, "max": 0.93 },
+          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+        },
+        {
+          "id": "graphic",
+          "name": "ภาพกราฟิก / มีตัวหนังสือ (PNG)",
+          "detail": "PNG ไม่มีการบีบอัดแบบสูญเสีย ตัวหนังสือจึงคมกว่า",
+          "maxLongEdge": 2048,
+          "format": "png",
+          "maxFileSizeKB": 15000,
+          "sharpen": { "radius": 0.6, "intensity": 0.25 }
+        },
+        {
+          "id": "story",
+          "name": "Story (9:16)",
+          "maxLongEdge": 1920,
+          "canvas": { "width": 1080, "height": 1920 },
+          "format": "jpeg",
+          "maxFileSizeKB": 1000,
+          "quality": { "min": 0.85, "max": 0.93 },
+          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+        },
+        {
+          "id": "cover",
+          "name": "ภาพปกโปรไฟล์",
+          "maxLongEdge": 1640,
+          "canvas": { "width": 1640, "height": 624 },
+          "format": "jpeg",
+          "maxFileSizeKB": 800,
+          "quality": { "min": 0.85, "max": 0.93 },
+          "sharpen": { "radius": 0.8, "intensity": 0.35 }
+        }
+      ]
+    },
+    {
+      "id": "line",
+      "name": "LINE",
+      "note": "LINE จำกัดภาพตามจำนวนพิกเซลรวม: ปกติ ≈ 1280×1280 และ HD ≈ 2048×2048 ให้ตั้งคุณภาพการส่งภาพใน LINE ให้ตรงกับแบบที่เลือก",
+      "targets": [
+        {
+          "id": "chat-hd",
+          "name": "ส่งในแชต (HD / คุณภาพสูง)",
+          "maxLongEdge": 4096,
+          "maxPixels": 4194304,
+          "format": "jpeg",
+          "maxFileSizeKB": 1500,
+          "quality": { "min": 0.86, "max": 0.94 },
+          "sharpen": { "radius": 0.8, "intensity": 0.35 },
+          "source": "https://help.line.me/line/smartphone/?contentId=20000248"
+        },
+        {
+          "id": "chat",
+          "name": "ส่งในแชต (คุณภาพปกติ)",
+          "maxLongEdge": 4096,
+          "maxPixels": 1638400,
+          "format": "jpeg",
+          "maxFileSizeKB": 700,
+          "quality": { "min": 0.86, "max": 0.94 },
+          "sharpen": { "radius": 0.7, "intensity": 0.3 },
+          "source": "https://help.line.me/line/smartphone/?contentId=20000248"
+        }
+      ]
+    }
+  ]
+}
