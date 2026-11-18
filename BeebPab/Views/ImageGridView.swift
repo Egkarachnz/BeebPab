@@ -4,11 +4,11 @@ import SwiftUI
 struct ImageGridView: View {
     @Environment(AppModel.self) private var model
 
-    private let columns = [GridItem(.adaptive(minimum: 170, maximum: 230), spacing: 14)]
+    private let columns = [GridItem(.adaptive(minimum: 200, maximum: 260), spacing: 14, alignment: .top)]
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 14) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
                 ForEach(model.jobs) { job in
                     ImageCell(job: job, canRemove: !model.isProcessing) { model.remove(job) }
                         .contextMenu {
@@ -43,25 +43,27 @@ private struct ImageCell: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.secondary.opacity(0.08))
-                if let thumb = job.thumbnail {
-                    Image(decorative: thumb, scale: 1)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                } else {
-                    ProgressView().controlSize(.small)
+            // The thumbnail fills a fixed-size box; drawing it in an overlay keeps a wide
+            // photo from widening the card past its grid column.
+            Color.secondary.opacity(0.08)
+                .frame(maxWidth: .infinity)
+                .frame(height: 140)
+                .overlay {
+                    if let thumb = job.thumbnail {
+                        Image(decorative: thumb, scale: 1)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        ProgressView().controlSize(.small)
+                    }
                 }
-
-                if job.status == .processing {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(.black.opacity(0.35))
-                    ProgressView().controlSize(.regular).tint(.white)
+                .overlay {
+                    if job.status == .processing {
+                        Color.black.opacity(0.35)
+                        ProgressView().controlSize(.regular).tint(.white)
+                    }
                 }
-            }
-            .frame(height: 124)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay(alignment: .topTrailing) { statusBadge.padding(6) }
             .overlay(alignment: .topLeading) {
                 if isHovering && canRemove {
@@ -104,6 +106,7 @@ private struct ImageCell: View {
             }
         }
         .padding(10)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .card()
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -148,11 +151,17 @@ private struct OutputRow: View {
 
     var body: some View {
         let r = output.result
-        HStack(spacing: 5) {
+        HStack(alignment: .top, spacing: 6) {
             Image(systemName: r.exceedsSizeLimit ? "exclamationmark.triangle.fill" : "arrow.down.right.circle.fill")
                 .foregroundStyle(r.exceedsSizeLimit ? Theme.orange : Theme.green)
-            Text("\(r.pixelWidth)×\(r.pixelHeight) · \(Theme.bytes(Int64(r.byteCount)))")
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(r.pixelWidth)×\(r.pixelHeight) · \(Theme.bytes(Int64(r.byteCount)))")
+                    .foregroundStyle(.primary)
+                Text(output.label)
+                    .foregroundStyle(.secondary)
+            }
+            .lineLimit(1)
+            .truncationMode(.tail)
             Spacer(minLength: 2)
             if let original = originalBytes, original > 0, Int64(r.byteCount) < original {
                 let saved = Int((1 - Double(r.byteCount) / Double(original)) * 100)
