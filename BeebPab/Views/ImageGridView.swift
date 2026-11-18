@@ -19,6 +19,10 @@ struct ImageGridView: View {
                                 Button {
                                     NSWorkspace.shared.activateFileViewerSelecting(job.outputs.map(\.result.outputURL))
                                 } label: { Label("แสดงไฟล์ที่ย่อแล้วใน Finder", systemImage: "checkmark.circle") }
+                                Button { model.requestRedo(job) } label: {
+                                    Label("ย่อภาพนี้ใหม่ (เขียนทับไฟล์เดิม)", systemImage: "arrow.clockwise")
+                                }
+                                .disabled(model.isProcessing)
                             }
                             Divider()
                             Button(role: .destructive) { model.remove(job) } label: {

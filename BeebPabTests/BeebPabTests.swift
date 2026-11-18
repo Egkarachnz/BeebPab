@@ -197,3 +197,71 @@ final class StubProtocol: URLProtocol {
     }
     override func stopLoading() {}
 }
+
+@MainActor
+final class RerunTests: XCTestCase {
+    private var dir: URL!
+    private var out: URL!
+
+    override func setUp() async throws {
+        dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        out = dir.appendingPathComponent("out", isDirectory: true)
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() async throws {
+        try? FileManager.default.removeItem(at: dir)
+    }
+
+    private func makeJPEG(_ name: String) throws -> URL {
+        let ctx = CGContext(data: nil, width: 3000, height: 2000, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        ctx.setFillColor(CGColor(srgbRed: 0.2, green: 0.5, blue: 0.9, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 3000, height: 2000))
+        let url = dir.appendingPathComponent(name)
+        let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(dest, ctx.makeImage()!, nil)
+        XCTAssertTrue(CGImageDestinationFinalize(dest))
+        return url
+    }
+
+    private func run(_ model: AppModel, _ catalog: PresetCatalog) async throws {
+        model.process(catalog: catalog, options: ProcessOptions())
+        for _ in 0..<400 where model.isProcessing { try await Task.sleep(for: .milliseconds(25)) }
+        XCTAssertFalse(model.isProcessing)
+    }
+
+    private func outputNames() throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: out.path).sorted()
+    }
+
+    func testRerunOnlyProcessesNewImagesAndRedoOverwrites() async throws {
+        let catalog = PresetStore.loadBundled(from: Bundle(for: PresetStore.self))
+        let model = AppModel()
+        model.selectedTargets = [TargetKey(platformID: "facebook", targetID: "feed")]
+        model.setOutputFolder(out)
+
+        let first = ImageJob(url: try makeJPEG("a.jpg"))
+        model.jobs = [first]
+        try await run(model, catalog)
+        XCTAssertEqual(try outputNames(), ["a_facebook-feed.jpg"])
+        XCTAssertFalse(model.canProcess(with: catalog), "nothing left to do")
+
+        // Adding a new image processes only that one.
+        model.jobs.append(ImageJob(url: try makeJPEG("b.jpg")))
+        XCTAssertEqual(model.pendingImageCount(with: catalog), 1)
+        try await run(model, catalog)
+        XCTAssertEqual(try outputNames(), ["a_facebook-feed.jpg", "b_facebook-feed.jpg"])
+
+        // Redo overwrites the same file instead of making a "(2)" copy.
+        model.requestRedo(first)
+        XCTAssertEqual(model.pendingImageCount(with: catalog), 1)
+        try await run(model, catalog)
+        XCTAssertEqual(try outputNames(), ["a_facebook-feed.jpg", "b_facebook-feed.jpg"])
+
+        // A deleted output counts as not done.
+        try FileManager.default.removeItem(at: out.appendingPathComponent("b_facebook-feed.jpg"))
+        XCTAssertEqual(model.pendingImageCount(with: catalog), 1)
+    }
+}

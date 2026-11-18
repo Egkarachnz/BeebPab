@@ -67,7 +67,8 @@ struct SidebarView: View {
                 .disabled(!model.canProcess(with: presets.catalog))
 
                 if let hint, !model.isProcessing {
-                    Label(hint, systemImage: "arrow.turn.left.up")
+                    Label(hint, systemImage: model.pendingImageCount(with: presets.catalog) == 0 && !model.jobs.isEmpty
+                          && selectedCount > 0 && model.outputFolder != nil ? "checkmark.circle" : "arrow.turn.left.up")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
@@ -83,8 +84,11 @@ struct SidebarView: View {
     }
 
     private var buttonTitle: String {
-        guard !model.jobs.isEmpty, selectedCount > 0 else { return "ย่อภาพ" }
-        return selectedCount == 1 ? "ย่อภาพ \(model.jobs.count) ภาพ" : "ย่อภาพ \(model.jobs.count) ภาพ × \(selectedCount) แบบ"
+        let pending = model.pendingImageCount(with: presets.catalog)
+        guard pending > 0, selectedCount > 0 else { return "ย่อภาพ" }
+        let isAddition = pending < model.jobs.count
+        let noun = isAddition ? "ภาพที่ยังไม่ได้ย่อ" : "ภาพ"
+        return "ย่อ\(noun) \(pending) ภาพ" + (selectedCount > 1 ? " × \(selectedCount) แบบ" : "")
     }
 
     /// Tells the user which step is still missing.
@@ -92,6 +96,9 @@ struct SidebarView: View {
         if model.jobs.isEmpty { return "เพิ่มภาพก่อน (ขั้นที่ 1)" }
         if selectedCount == 0 { return "เลือกเป้าหมายอย่างน้อย 1 แบบ (ขั้นที่ 2)" }
         if model.outputFolder == nil { return "เลือกโฟลเดอร์บันทึก (ขั้นที่ 3)" }
+        if model.pendingImageCount(with: presets.catalog) == 0 {
+            return "ย่อครบทุกภาพแล้ว · คลิกขวาที่ภาพเพื่อย่อใหม่"
+        }
         return nil
     }
 }

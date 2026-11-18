@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class ImageJob: Identifiable {
     struct Output: Equatable {
+        var key: TargetKey
         var label: String
         var result: ProcessResult
     }
@@ -21,10 +22,14 @@ final class ImageJob: Identifiable {
     var errors: [String] = []
     var pendingCount = 0
     var status: Status = .idle
+    /// When true, the next run resizes this image again (overwriting its earlier files).
+    var redoRequested = false
 
     init(url: URL) { self.url = url }
 
     var name: String { url.lastPathComponent }
+
+    func output(for key: TargetKey) -> Output? { outputs.first { $0.key == key } }
 
     func loadInfo() {
         let url = self.url
@@ -97,6 +102,12 @@ final class AppModel {
         lastRunSummary = nil
     }
 
+    func requestRedo(_ job: ImageJob) {
+        guard !isProcessing else { return }
+        job.redoRequested = true
+        job.status = .idle
+    }
+
     func chooseFiles() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -120,29 +131,61 @@ final class AppModel {
         panel.message = "เลือกโฟลเดอร์สำหรับบันทึกภาพที่ย่อแล้ว"
         if let current = outputFolder { panel.directoryURL = current }
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        if folderIsScoped { outputFolder?.stopAccessingSecurityScopedResource() }
-        folderIsScoped = false
-        outputFolder = url
+        setOutputFolder(url)
         FolderBookmark.save(url)
     }
 
-    // MARK: Processing
+    func setOutputFolder(_ url: URL) {
+        if folderIsScoped { outputFolder?.stopAccessingSecurityScopedResource() }
+        folderIsScoped = false
+        outputFolder = url
+    }
+
+    // MARK: Pending work
 
     func toggle(_ key: TargetKey) {
         if selectedTargets.contains(key) { selectedTargets.remove(key) } else { selectedTargets.insert(key) }
     }
 
-    func canProcess(with catalog: PresetCatalog) -> Bool {
-        !isProcessing && !jobs.isEmpty && outputFolder != nil && !catalog.orderedKeys(in: selectedTargets).isEmpty
+    /// An output counts as done only if its file still exists in the current output folder.
+    static func isDone(_ output: ImageJob.Output, in folder: URL) -> Bool {
+        let path = output.result.outputURL.standardizedFileURL.path
+        let base = folder.standardizedFileURL.path
+        return path.hasPrefix(base.hasSuffix("/") ? base : base + "/")
+            && FileManager.default.fileExists(atPath: path)
     }
+
+    /// Selected targets this image still needs (all of them if a redo was requested).
+    func pendingKeys(for job: ImageJob, catalog: PresetCatalog) -> [TargetKey] {
+        let keys = catalog.orderedKeys(in: selectedTargets)
+        guard let folder = outputFolder, !job.redoRequested else { return keys }
+        return keys.filter { key in
+            guard let output = job.output(for: key) else { return true }
+            return !Self.isDone(output, in: folder)
+        }
+    }
+
+    func pendingImageCount(with catalog: PresetCatalog) -> Int {
+        jobs.filter { !pendingKeys(for: $0, catalog: catalog).isEmpty }.count
+    }
+
+    var allImagesDone: Bool { !jobs.isEmpty && jobs.allSatisfy { $0.status == .done } }
+
+    func canProcess(with catalog: PresetCatalog) -> Bool {
+        !isProcessing && outputFolder != nil && !catalog.orderedKeys(in: selectedTargets).isEmpty
+            && pendingImageCount(with: catalog) > 0
+    }
+
+    // MARK: Processing
 
     func process(catalog: PresetCatalog, options: ProcessOptions) {
         guard canProcess(with: catalog), let folder = outputFolder else { return }
-        let targets = catalog.orderedKeys(in: selectedTargets).compactMap { catalog.resolve($0) }
-        let useSubfolders = targets.count > 1
+        // Subfolders depend on the whole selection, so file locations stay stable between runs.
+        let useSubfolders = catalog.orderedKeys(in: selectedTargets).count > 1
 
         struct WorkItem: Sendable {
             var jobIndex: Int
+            var key: TargetKey
             var label: String
             var input: URL
             var target: OutputTarget
@@ -150,17 +193,29 @@ final class AppModel {
         }
 
         var reserved = Set<URL>()
+        // Files from earlier runs that we'll overwrite count as taken by their own job only.
+        for job in jobs { for output in job.outputs { reserved.insert(output.result.outputURL) } }
+
         var work: [WorkItem] = []
         var setupErrors = 0
         for (index, job) in jobs.enumerated() {
-            job.outputs = []
+            let keys = pendingKeys(for: job, catalog: catalog)
+            guard !keys.isEmpty else { continue }
             job.errors = []
             job.pendingCount = 0
-            for (platform, target) in targets {
+            job.redoRequested = false
+            for key in keys {
+                guard let (platform, target) = catalog.resolve(key) else { continue }
                 do {
-                    let out = try OutputWriter.outputURL(for: job.url, platform: platform, target: target,
+                    let out: URL
+                    if let previous = job.output(for: key),
+                       previous.result.outputURL.deletingLastPathComponent().standardizedFileURL.path.hasPrefix(folder.standardizedFileURL.path) {
+                        out = previous.result.outputURL   // re-run: overwrite the same file, no "(2)" copy
+                    } else {
+                        out = try OutputWriter.outputURL(for: job.url, platform: platform, target: target,
                                                          in: folder, useSubfolder: useSubfolders, reserved: &reserved)
-                    work.append(WorkItem(jobIndex: index, label: "\(platform.name) · \(target.name)",
+                    }
+                    work.append(WorkItem(jobIndex: index, key: key, label: "\(platform.name) · \(target.name)",
                                          input: job.url, target: target, output: out))
                     job.pendingCount += 1
                 } catch {
@@ -180,6 +235,7 @@ final class AppModel {
         Task {
             let started = Date()
             var failures = setupErrors
+            var saved = 0
             var oversize = 0
             await withTaskGroup(of: (WorkItem, Result<ProcessResult, Error>).self) { group in
                 var queue = work.makeIterator()
@@ -202,7 +258,9 @@ final class AppModel {
                     let job = jobsSnapshot[item.jobIndex]
                     switch result {
                     case .success(let r):
-                        job.outputs.append(.init(label: item.label, result: r))
+                        job.outputs.removeAll { $0.key == item.key }
+                        job.outputs.append(.init(key: item.key, label: item.label, result: r))
+                        saved += 1
                         if r.exceedsSizeLimit { oversize += 1 }
                     case .failure(let error):
                         job.errors.append("\(item.label): \(error.localizedDescription)")
@@ -216,7 +274,6 @@ final class AppModel {
             }
 
             let seconds = Date().timeIntervalSince(started)
-            let saved = jobsSnapshot.reduce(0) { $0 + $1.outputs.count }
             var summary = "บันทึก \(saved) ไฟล์ ใน \(String(format: "%.1f", seconds)) วินาที"
             if failures > 0 { summary += " · ผิดพลาด \(failures)" }
             if oversize > 0 { summary += " · \(oversize) ไฟล์ยังใหญ่กว่าเกณฑ์" }
